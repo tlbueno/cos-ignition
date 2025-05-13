@@ -1,0 +1,37 @@
+---
+name: TMT Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  tmt-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install dependencies
+        run: |
+          set -x -e -o pipefail
+          sudo apt-get update
+          sudo apt-get install -y podman libblkid-dev
+          sudo pip install --user tmt
+
+      - name: Build Ignition
+        run: |
+          set -x -e -o pipefail
+          make all
+
+      - name: Run TMT tests
+        run: |
+          set -x -e -o pipefail
+          tmt run --all provision --how container plan --filter 'tag:smoke'
