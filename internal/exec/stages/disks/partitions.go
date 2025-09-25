@@ -324,18 +324,6 @@ func (p PartitionList) Swap(i, j int) {
 }
 
 // Expects a /dev/xyz path
-func blockDevHeld(blockDevResolved string) (bool, error) {
-	_, blockDevNode := filepath.Split(blockDevResolved)
-
-	holdersDir := fmt.Sprintf("/sys/class/block/%s/holders/", blockDevNode)
-	entries, err := os.ReadDir(holdersDir)
-	if err != nil {
-		return false, fmt.Errorf("failed to retrieve holders of %q: %v", blockDevResolved, err)
-	}
-	return len(entries) > 0, nil
-}
-
-// Expects a /dev/xyz path
 func blockDevMounted(blockDevResolved string) (bool, error) {
 	mounts, err := os.Open("/proc/mounts")
 	if err != nil {
@@ -383,16 +371,10 @@ func blockDevPartitions(blockDevResolved string) ([]string, error) {
 // Expects a /dev/xyz path
 func blockDevInUse(blockDevResolved string, skipPartitionCheck bool) (bool, []string, error) {
 	// Note: This ignores swap and LVM usage
-	inUse := false
-	held, err := blockDevHeld(blockDevResolved)
-	if err != nil {
-		return false, nil, fmt.Errorf("failed to check if %q is held: %v", blockDevResolved, err)
-	}
-	mounted, err := blockDevMounted(blockDevResolved)
+	inUse, err := blockDevMounted(blockDevResolved)
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to check if %q is mounted: %v", blockDevResolved, err)
 	}
-	inUse = held || mounted
 	if skipPartitionCheck {
 		return inUse, nil, nil
 	}
